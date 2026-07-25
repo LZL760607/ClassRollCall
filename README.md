@@ -33,6 +33,6 @@
 ### 克隆 & 运行
 
 ```bash
-https://github.com/LZL760607/ClassRollCall.git
+git clone https://github.com/LZL760607/ClassRollCall.git
 cd ClassRollCall
 dotnet run --project WpfApp1
