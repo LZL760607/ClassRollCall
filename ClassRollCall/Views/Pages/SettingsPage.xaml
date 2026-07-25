@@ -1,0 +1,260 @@
+﻿<Page x:Class="ClassRollCall.Views.Pages.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="设置"
+      Background="{DynamicResource AppBackground}">
+
+    <Page.Resources>
+        <Style x:Key="CountButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" CornerRadius="6"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background"
+                                        Value="{DynamicResource CardBackground}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background"
+                                        Value="{DynamicResource BorderBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer Margin="32" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock Text="系统设置" FontSize="22" FontWeight="Light"
+                       Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,20" />
+
+            <!-- ====== 点名设置 ====== -->
+            <Border CornerRadius="8" Background="{DynamicResource CardBackground}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                    Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="点名设置" FontSize="16"
+                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,12" />
+
+                    <TextBlock Text="单次点名人数"
+                               Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,12" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="1" Tag="1" Click="CountBtn_Click"
+                                Style="{StaticResource CountButtonStyle}" Margin="0,0,8,0" />
+                        <Button Content="2" Tag="2" Click="CountBtn_Click"
+                                Style="{StaticResource CountButtonStyle}" Margin="0,0,8,0" />
+                        <Button Content="3" Tag="3" Click="CountBtn_Click"
+                                Style="{StaticResource CountButtonStyle}" Margin="0,0,8,0" />
+                        <Button Content="5" Tag="5" Click="CountBtn_Click"
+                                Style="{StaticResource CountButtonStyle}" Margin="0,0,12,0" />
+                        <Border CornerRadius="6" Background="{DynamicResource AppBackground}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <TextBox x:Name="CustomCountInput" Width="60" Height="32"
+                                     Background="Transparent"
+                                     Foreground="{DynamicResource TextPrimary}"
+                                     BorderThickness="0" Padding="8,0"
+                                     VerticalContentAlignment="Center"
+                                     GotFocus="CustomCountInput_GotFocus"
+                                     TextChanged="CustomCountInput_TextChanged" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 自动权重开关 -->
+                    <Grid Height="36" Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="点名后自动调节权重"
+                                   Foreground="{DynamicResource TextSecondary}"
+                                   VerticalAlignment="Center" />
+                        <ui:ToggleSwitch Grid.Column="1" x:Name="AutoWeightSwitch"
+                                         IsChecked="True" HorizontalAlignment="Left"
+                                         Checked="AutoWeight_Changed"
+                                         Unchecked="AutoWeight_Changed" />
+                    </Grid>
+
+                    <!-- 衰减系数 -->
+                    <Grid Height="36" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="衰减系数"
+                                   Foreground="{DynamicResource TextSecondary}"
+                                   VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Slider x:Name="DecaySlider"
+                                    Minimum="0.1" Maximum="1.0"
+                                    Width="140" Margin="0,0,8,0"
+                                    ValueChanged="Decay_ValueChanged" />
+                            <TextBlock x:Name="DecayLabel" Text="0.70"
+                                       Foreground="{DynamicResource TextPrimary}"
+                                       Width="40" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- ====== 随机种子 & 公式（AutoWeight 开启时显示） ====== -->
+            <Border CornerRadius="8" Background="{DynamicResource CardBackground}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                    Padding="20" Margin="0,0,0,16"
+                    x:Name="FormulaSection">
+                <StackPanel>
+                    <TextBlock Text="算法参数公示" FontSize="16"
+                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,12" />
+
+                    <Grid Height="36">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="随机种子"
+                                       Foreground="{DynamicResource TextSecondary}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="（每15秒刷新）"
+                                       Foreground="{DynamicResource TextSecondary}"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0,0,0" />
+                        </StackPanel>
+                        <Border Grid.Column="1"
+                                CornerRadius="4"
+                                Background="{DynamicResource AppBackground}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                HorizontalAlignment="Left"
+                                Padding="10,6">
+                            <TextBlock x:Name="SeedText"
+                                       Text="生成中..."
+                                       Foreground="#00CC6A"
+                                       FontSize="14"
+                                       FontFamily="Consolas"
+                                       FontWeight="SemiBold" />
+                        </Border>
+                    </Grid>
+
+                    <Border CornerRadius="6"
+                            Background="{DynamicResource AppBackground}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            Padding="14" Margin="0,14,0,0">
+                        <StackPanel>
+                            <TextBlock Text="加权随机概率公式"
+                                       Foreground="{DynamicResource TextPrimary}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <TextBlock Foreground="{DynamicResource TextSecondary}"
+                                       FontSize="13" FontFamily="Consolas"
+                                       LineHeight="24">
+                                <Run Text="P(i) = W(i) / ΣW(j)" />
+                                <LineBreak />
+                                <Run Text="种子 = SHA256(时间戳 + 熵池)" />
+                                <LineBreak />
+                                <Run Text="Random(种子, " />
+                                <Run x:Name="DecayFormula" Text="decay=0.70" />
+                                <Run Text=")" />
+                            </TextBlock>
+                            <TextBlock x:Name="FormulaDetail"
+                                       Text="被点名后：权重×0.70，差值按比例分配给其他未锁定的人。"
+                                       Foreground="{DynamicResource TextSecondary}"
+                                       FontSize="11" Margin="0,6,0,0"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ====== 概率分布（横向文字） ====== -->
+            <Border CornerRadius="8" Background="{DynamicResource CardBackground}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                    Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="点名概率分布" FontSize="16"
+                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,12" />
+                    <TextBlock x:Name="ProbabilityText"
+                               Foreground="{DynamicResource TextSecondary}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               LineHeight="20" />
+                </StackPanel>
+            </Border>
+
+            <!-- ====== 悬浮窗 ====== -->
+            <Border CornerRadius="8" Background="{DynamicResource CardBackground}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                    Padding="20" Margin="0,0,0,16">
+                <Grid Height="36">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="显示桌面悬浮窗"
+                               Foreground="{DynamicResource TextSecondary}"
+                               VerticalAlignment="Center" />
+                    <ui:ToggleSwitch Grid.Column="1" x:Name="WidgetSwitch"
+                                     IsChecked="True" HorizontalAlignment="Left"
+                                     Checked="WidgetSwitch_Checked"
+                                     Unchecked="WidgetSwitch_Unchecked" />
+                </Grid>
+            </Border>
+
+            <!-- ====== 窗口行为 ====== -->
+            <Border CornerRadius="8" Background="{DynamicResource CardBackground}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                    Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <Grid Height="36">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="关闭时最小化到托盘"
+                                   Foreground="{DynamicResource TextSecondary}"
+                                   VerticalAlignment="Center" />
+                        <ui:ToggleSwitch Grid.Column="1" IsChecked="True"
+                                         HorizontalAlignment="Left" />
+                    </Grid>
+                    <Grid Height="36" Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="开机自动启动"
+                                   Foreground="{DynamicResource TextSecondary}"
+                                   VerticalAlignment="Center" />
+                        <ui:ToggleSwitch Grid.Column="1" HorizontalAlignment="Left" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- ====== 关于 ====== -->
+            <Border CornerRadius="8" Background="{DynamicResource CardBackground}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                    Padding="20">
+                <StackPanel>
+                    <TextBlock Text="关于" FontSize="16"
+                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8" />
+                    <TextBlock Text="ClassRollCall v1.0"
+                               Foreground="{DynamicResource TextSecondary}" FontSize="12" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

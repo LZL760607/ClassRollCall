@@ -1,0 +1,38 @@
+﻿<Window x:Class="ClassRollCall.Views.ResultPopupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowState="Maximized"
+        Topmost="True"
+        ShowInTaskbar="False">
+    <Grid x:Name="RootGrid" Opacity="0">
+        <Grid.Background>
+            <SolidColorBrush Color="#000000" Opacity="0.65"/>
+        </Grid.Background>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    x:Name="CardPanel"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center" />
+
+        <Button Grid.Row="1"
+                x:Name="CloseBtn"
+                Content="关  闭"
+                Width="120" Height="38"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,40"
+                Background="#0078D4"
+                Foreground="White"
+                FontSize="15"
+                BorderThickness="0"
+                Visibility="Collapsed"
+                Click="CloseBtn_Click" />
+    </Grid>
+</Window>
