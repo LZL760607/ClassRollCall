@@ -20,17 +20,7 @@
 - **配置持久化** — JSON 文件保存学生名单、权重、偏好设置
 - **深色主题** — WPF-UI Fluent Design 风格
 
----
 
-## 🖥 截图
-
-> 可自行截图后替换此处的占位链接
-
-| 主界面 | 悬浮窗 | 点名结果 |
-|--------|--------|----------|
-| ![](screenshots/home.png) | ![](screenshots/widget.png) | ![](screenshots/result.png) |
-
----
 
 ## 🚀 快速开始
 
