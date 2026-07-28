@@ -103,9 +103,8 @@ public partial class SettingsPage : Page
         UpdateFormulaVisibility();
         UpdateFormula();
 
-        // 关闭自动权重时强制重置所有人权重为 1.0
         if (!enabled)
-            _studentService.ResetAllWeightsForce();
+            _studentService.ResetAllWeights();
     }
 
     private void UpdateFormulaVisibility()
@@ -165,7 +164,7 @@ public partial class SettingsPage : Page
             : "自动权重调节已关闭。";
     }
 
-    // ==================== 概率分布（横向文字） ====================
+    // ==================== 概率分布 ====================
 
     private void RefreshProbabilities()
     {

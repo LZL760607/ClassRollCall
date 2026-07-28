@@ -4,9 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
 using Microsoft.Win32;
 using ClassRollCall.Services;
 using ClassRollCall.Models;
@@ -20,9 +17,6 @@ public partial class StudentManagePage : Page
     private readonly IServiceProvider _serviceProvider;
     private DesktopWidget? _widget;
     private WeightManageWindow? _weightWindow;
-
-    private const string TriggerWord = "manager";
-    private const string CorrectPassword = "100504";
 
     public StudentManagePage(StudentService studentService, IServiceProvider serviceProvider)
     {
@@ -39,118 +33,6 @@ public partial class StudentManagePage : Page
         _weightWindow = _serviceProvider.GetService<WeightManageWindow>();
     }
 
-    // ==================== 隐藏入口 ====================
-
-    private void NameInput_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (NameInput.Text.Trim().Equals(TriggerWord, StringComparison.OrdinalIgnoreCase))
-        {
-            NameInput.Text = string.Empty;
-            ShowPasswordPanel();
-        }
-    }
-
-    private void NameInput_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter &&
-            NameInput.Text.Trim().Equals(TriggerWord, StringComparison.OrdinalIgnoreCase))
-        {
-            NameInput.Text = string.Empty;
-            ShowPasswordPanel();
-        }
-    }
-
-    private void ShowPasswordPanel()
-    {
-        PasswordPanel.Visibility = Visibility.Visible;
-        PasswordBox.Password = string.Empty;
-        PasswordBox.Focus();
-
-        PasswordPanel.RenderTransform = PanelScale;
-
-        var scaleAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        PanelScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnim);
-
-        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        PasswordPanel.BeginAnimation(OpacityProperty, fadeIn);
-    }
-
-    private void HidePasswordPanel()
-    {
-        var scaleAnim = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        scaleAnim.Completed += (s, a) => PasswordPanel.Visibility = Visibility.Collapsed;
-        PanelScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnim);
-
-        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(160));
-        PasswordPanel.BeginAnimation(OpacityProperty, fadeOut);
-    }
-
-    private void ShakePasswordPanel()
-    {
-        var tg = new TransformGroup();
-        tg.Children.Add(new ScaleTransform(1, 1));
-        tg.Children.Add(new TranslateTransform());
-        PasswordPanel.RenderTransform = tg;
-
-        var tt = (TranslateTransform)tg.Children[1];
-        var shake = new DoubleAnimation(0, 8, TimeSpan.FromMilliseconds(50))
-        {
-            AutoReverse = true,
-            RepeatBehavior = new RepeatBehavior(3),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
-        };
-        tt.BeginAnimation(TranslateTransform.XProperty, shake);
-
-        PasswordPanel.BorderBrush = new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23));
-        var delay = new System.Windows.Threading.DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(600)
-        };
-        delay.Tick += (s, a) =>
-        {
-            delay.Stop();
-            PasswordPanel.BorderBrush = new SolidColorBrush(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF));
-            PasswordBox.Password = string.Empty;
-        };
-        delay.Start();
-    }
-
-    private void ConfirmPassword_Click(object sender, RoutedEventArgs e)
-    {
-        if (PasswordBox.Password == CorrectPassword)
-        {
-            HidePasswordPanel();
-            _weightWindow?.Show();
-            _weightWindow?.Activate();
-        }
-        else
-        {
-            ShakePasswordPanel();
-        }
-    }
-
-    private void PasswordBox_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-            ConfirmPassword_Click(sender, e);
-    }
-
-    private void CancelPassword_Click(object sender, RoutedEventArgs e)
-    {
-        HidePasswordPanel();
-    }
-
-    // ==================== 原有功能 ====================
-
     private void AddStudent_Click(object sender, RoutedEventArgs e)
     {
         string name = NameInput.Text.Trim();
@@ -166,13 +48,9 @@ public partial class StudentManagePage : Page
     private void RemoveStudent_Click(object sender, RoutedEventArgs e)
     {
         if (StudentList.SelectedItem is StudentInfo selected)
-        {
             _studentService.RemoveStudent(selected.Name);
-        }
         else
-        {
             MessageBox.Show("请先选中要删除的学生");
-        }
     }
 
     private void ShowWidget_Click(object sender, RoutedEventArgs e)
@@ -180,6 +58,13 @@ public partial class StudentManagePage : Page
         _widget ??= _serviceProvider.GetService<DesktopWidget>();
         _widget?.Show();
         _widget?.Activate();
+    }
+
+    private void OpenWeight_Click(object sender, RoutedEventArgs e)
+    {
+        _weightWindow ??= _serviceProvider.GetService<WeightManageWindow>();
+        _weightWindow?.Show();
+        _weightWindow?.Activate();
     }
 
     private void ImportList_Click(object sender, RoutedEventArgs e)

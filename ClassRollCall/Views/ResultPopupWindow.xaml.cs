@@ -36,7 +36,7 @@ public partial class ResultPopupWindow : Window
         public List<TextBlock> NameBlocks = null!;
         public ProgressBar ProgressBar = null!;
         public double TargetW, TargetH;
-        public bool NamesShown; // 替代 Expanded，追踪名字是否已显示
+        public bool NamesShown;
     }
 
     private static readonly Color Bg = Color.FromRgb(0x2B, 0x2B, 0x2B);
@@ -49,12 +49,35 @@ public partial class ResultPopupWindow : Window
         _names = names;
         _totalSeconds = 3 + Math.Max(0, _names.Count - 1);
         _remainingSeconds = _totalSeconds;
-
         _closeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         _closeTimer.Tick += CloseTimer_Tick;
-
         Loaded += OnLoaded;
         MouseLeftButtonDown += OnAnyClick;
+    }
+
+    // ==================== 宽度计算 ====================
+
+    /// <summary>估算文本像素宽度（中文≈字号，英文≈字号×0.6）</summary>
+    private static double MeasureTextWidth(string text, int fontSize)
+    {
+        double w = 0;
+        foreach (char c in text)
+        {
+            if (c > 127) w += fontSize;       // 中文/全角
+            else w += fontSize * 0.6;          // 英文/数字/符号
+        }
+        return w;
+    }
+
+    /// <summary>根据名字列表计算合适卡片宽度</summary>
+    private static double CalcCardWidth(List<string> names, int fontSize, int cardCount)
+    {
+        double maxTextWidth = names.Max(n => MeasureTextWidth(n, fontSize));
+        // 卡片宽度 = 文字宽度 + 左右内边距(40) + 卡片间距
+        double contentWidth = maxTextWidth + 80;
+        double minW = 260;
+        double maxW = cardCount == 1 ? 500 : 380;
+        return Math.Clamp(contentWidth, minW, maxW);
     }
 
     // ==================== 入场 ====================
@@ -71,7 +94,6 @@ public partial class ResultPopupWindow : Window
 
     private void BuildAll()
     {
-        // 分组
         int cardCount = _names.Count <= MaxPerCard ? 1
             : Math.Min(MaxCards, (int)Math.Ceiling(_names.Count / 4.0));
         int per = (int)Math.Ceiling((double)_names.Count / cardCount);
@@ -88,8 +110,7 @@ public partial class ResultPopupWindow : Window
             _cards.Add(card);
         }
 
-        // ★ 所有卡片一起展开框架（横线→纵向→内容淡入）
-        //    展开后全部显示三点加载
+        // 全部卡片一起展开
         int expanded = 0;
         for (int i = 0; i < _cards.Count; i++)
         {
@@ -97,95 +118,20 @@ public partial class ResultPopupWindow : Window
             ExpandCardFrame(idx, () =>
             {
                 expanded++;
-                // 所有卡片框架都展开完毕后：
                 if (expanded >= _cards.Count)
                 {
-                    // 卡片1：立即切换为名字
                     ShowNames(0);
                     if (_cards.Count > 0) _closeTimer.Start();
-
-                    // 卡片2/3/4：延迟后切换为名字
                     for (int j = 1; j < _cards.Count; j++)
                     {
                         int jdx = j;
-                        double delay = jdx * 1200 + _rng.Next(400, 1000);
+                        double delay = jdx * 1200 + _rng.Next(800, 2000);
                         After(delay, () => ShowNames(jdx));
                     }
                 }
             });
         }
     }
-
-    /// <summary>
-    /// 阶段A：横线展开 → 纵向展开 → 内容淡入（此时显示三点加载）
-    /// </summary>
-    private void ExpandCardFrame(int cardIdx, Action onDone)
-    {
-        if (_isClosing) { onDone(); return; }
-        var card = _cards[cardIdx];
-        var border = _borders[cardIdx];
-        double tw = card.TargetW, th = card.TargetH;
-
-        // ① 横线展开
-        var wAnim = new DoubleAnimation(0, tw, TimeSpan.FromMilliseconds(260))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        wAnim.Completed += (s, a) =>
-        {
-            // ② 纵向展开
-            var hAnim = new DoubleAnimation(4, th, TimeSpan.FromMilliseconds(300))
-            {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-            hAnim.Completed += (s2, a2) =>
-            {
-                // ③ 内容淡入（loadingDots 可见，namesPanel 隐藏）
-                var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160));
-                fadeIn.Completed += (s3, a3) => onDone();
-                card.ContentGrid.BeginAnimation(OpacityProperty, fadeIn);
-            };
-            border.BeginAnimation(HeightProperty, hAnim);
-        };
-        border.BeginAnimation(WidthProperty, wAnim);
-    }
-
-    /// <summary>
-    /// 阶段B：隐藏三点加载 → 显示名字 → 逐个从右滑入
-    /// </summary>
-    private void ShowNames(int cardIdx)
-    {
-        if (_isClosing) return;
-        var card = _cards[cardIdx];
-        if (card.NamesShown) return;
-        card.NamesShown = true;
-
-        card.LoadingDots.Visibility = Visibility.Collapsed;
-        card.NamesPanel.Visibility = Visibility.Visible;
-        SlideIn(cardIdx, 0);
-    }
-
-    private void SlideIn(int cardIdx, int nameIdx)
-    {
-        if (_isClosing) return;
-        var card = _cards[cardIdx];
-        if (nameIdx >= card.NameBlocks.Count) return;
-
-        var tb = card.NameBlocks[nameIdx];
-        var tr = tb.RenderTransform as TranslateTransform ?? new TranslateTransform(60, 0);
-        tb.RenderTransform = tr;
-
-        tb.BeginAnimation(OpacityProperty,
-            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(120))
-            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
-        tr.BeginAnimation(TranslateTransform.XProperty,
-            new DoubleAnimation(60, 0, TimeSpan.FromMilliseconds(140))
-            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
-
-        After(100, () => SlideIn(cardIdx, nameIdx + 1));
-    }
-
-    // ==================== MakeCard（不变） ====================
 
     private (Border, Card) MakeCard(List<string> names, int idx, int total)
     {
@@ -300,7 +246,8 @@ public partial class ResultPopupWindow : Window
 
         card.ContentGrid = new Grid { Opacity = 0, Children = { inner } };
 
-        card.TargetW = total switch { 1 => 340, 2 => 300, 3 => 280, _ => 260 };
+        // ---- 自适应宽度 ----
+        card.TargetW = CalcCardWidth(names, fs, total);
         card.TargetH = 160 + names.Count * 52;
 
         var border = new Border
@@ -326,7 +273,61 @@ public partial class ResultPopupWindow : Window
         return (border, card);
     }
 
-    // ==================== 倒计时（不变） ====================
+    // ==================== 展开 ====================
+
+    private void ExpandCardFrame(int cardIdx, Action onDone)
+    {
+        if (_isClosing) { onDone(); return; }
+        var card = _cards[cardIdx];
+        var border = _borders[cardIdx];
+        double tw = card.TargetW, th = card.TargetH;
+
+        var wAnim = new DoubleAnimation(0, tw, TimeSpan.FromMilliseconds(260))
+        { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+        wAnim.Completed += (s, a) =>
+        {
+            var hAnim = new DoubleAnimation(4, th, TimeSpan.FromMilliseconds(300))
+            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+            hAnim.Completed += (s2, a2) =>
+            {
+                var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160));
+                fadeIn.Completed += (s3, a3) => onDone();
+                card.ContentGrid.BeginAnimation(OpacityProperty, fadeIn);
+            };
+            border.BeginAnimation(HeightProperty, hAnim);
+        };
+        border.BeginAnimation(WidthProperty, wAnim);
+    }
+
+    private void ShowNames(int cardIdx)
+    {
+        if (_isClosing) return;
+        var card = _cards[cardIdx];
+        if (card.NamesShown) return;
+        card.NamesShown = true;
+        card.LoadingDots.Visibility = Visibility.Collapsed;
+        card.NamesPanel.Visibility = Visibility.Visible;
+        SlideIn(cardIdx, 0);
+    }
+
+    private void SlideIn(int cardIdx, int nameIdx)
+    {
+        if (_isClosing) return;
+        var card = _cards[cardIdx];
+        if (nameIdx >= card.NameBlocks.Count) return;
+        var tb = card.NameBlocks[nameIdx];
+        var tr = tb.RenderTransform as TranslateTransform ?? new TranslateTransform(60, 0);
+        tb.RenderTransform = tr;
+        tb.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(120))
+            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        tr.BeginAnimation(TranslateTransform.XProperty,
+            new DoubleAnimation(60, 0, TimeSpan.FromMilliseconds(140))
+            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        After(100, () => SlideIn(cardIdx, nameIdx + 1));
+    }
+
+    // ==================== 倒计时 ====================
 
     private void CloseTimer_Tick(object? sender, EventArgs e)
     {
@@ -347,7 +348,7 @@ public partial class ResultPopupWindow : Window
 
     private void CloseBtn_Click(object sender, RoutedEventArgs e) => CloseWithAnimation();
 
-    // ==================== 退场（不变） ====================
+    // ==================== 退场 ====================
 
     private void CloseWithAnimation()
     {
@@ -357,17 +358,13 @@ public partial class ResultPopupWindow : Window
         StopTimers();
         CloseBtn.Visibility = Visibility.Collapsed;
 
-        int done = 0;
-        int total = _cards.Count;
-
+        int done = 0, total = _cards.Count;
         for (int i = 0; i < _cards.Count; i++)
         {
             int idx = i;
             var card = _cards[idx];
             var border = _borders[idx];
-
             if (!card.NamesShown) { done++; if (done >= total) FinishClose(); continue; }
-
             SlideOut(idx, 0, () =>
             {
                 var fo = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(100));
@@ -391,7 +388,6 @@ public partial class ResultPopupWindow : Window
                 card.ContentGrid.BeginAnimation(OpacityProperty, fo);
             });
         }
-
         if (total == 0) FinishClose();
     }
 
@@ -399,18 +395,15 @@ public partial class ResultPopupWindow : Window
     {
         var card = _cards[cardIdx];
         if (nameIdx >= card.NameBlocks.Count) { onDone(); return; }
-
         var tb = card.NameBlocks[nameIdx];
         var tr = tb.RenderTransform as TranslateTransform ?? new TranslateTransform(0, 0);
         tb.RenderTransform = tr;
-
         tb.BeginAnimation(OpacityProperty,
             new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(80))
             { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } });
         tr.BeginAnimation(TranslateTransform.XProperty,
             new DoubleAnimation(0, 60, TimeSpan.FromMilliseconds(100))
             { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } });
-
         After(60, () => SlideOut(cardIdx, nameIdx + 1, onDone));
     }
 
@@ -426,7 +419,7 @@ public partial class ResultPopupWindow : Window
     private void After(double ms, Action action)
     {
         var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
-        t.Tick += (s, a) => { t.Stop(); _timers.Remove(t); action(); };
+        t.Tick += (st, sa) => { t.Stop(); _timers.Remove(t); action(); };
         _timers.Add(t);
         t.Start();
     }

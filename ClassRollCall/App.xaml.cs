@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Media;
 using Forms = System.Windows.Forms;
 using Drawing = System.Drawing;
 using ClassRollCall.Services;
@@ -59,12 +58,14 @@ public partial class App : Application
         base.OnStartup(e);
     }
 
+    // ==================== 托盘 ====================
+
     private void InitTrayIcon()
     {
         _trayIcon = new Forms.NotifyIcon
         {
             Icon = Drawing.SystemIcons.Application,
-            Text = "ClassRollCall 课堂点名",
+            Text = "ClassRollCall",
             Visible = true
         };
 
@@ -92,6 +93,8 @@ public partial class App : Application
             null, _trayIcon, null);
     }
 
+    // ==================== 窗口操作 ====================
+
     public void ShowMainWindow()
     {
         var main = _host.Services.GetRequiredService<MainWindow>();
@@ -116,9 +119,6 @@ public partial class App : Application
     private void ExitApp()
     {
         var studentService = _host.Services.GetRequiredService<StudentService>();
-
-        // 退出前强制重置所有权重为 1.0
-        studentService.ResetAllWeightsForce();
         studentService.SaveToStorage();
 
         if (_trayIcon != null)
